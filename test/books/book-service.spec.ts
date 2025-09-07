@@ -88,11 +88,14 @@ describe('BooksService (unit)', () => {
       updatedAt: new Date('2020-01-01T00:00:00Z'),
     });
 
-    const updated = await service.update('uuid', {
-      title: 'วิธีทำผัดผัก',
-      description: 'การทำผัดผัก',
-      author: 'สมชาย ยงใจยุทร',
-    });
+    const updated = await service.update(
+      { id: 'uuid' },
+      {
+        title: 'วิธีทำผัดผัก',
+        description: 'การทำผัดผัก',
+        author: 'สมชาย ยงใจยุทร',
+      },
+    );
 
     expect(updated.title).toBe('วิธีทำผัดผัก');
     expect(updated.availableQuantity).toBe(3);
@@ -116,7 +119,7 @@ describe('BooksService (unit)', () => {
       updatedAt: new Date('2020-01-01T00:00:00Z'),
     });
 
-    const ok = await service.borrow('uuid', 1);
+    const ok = await service.borrow({ id: 'uuid' }, { qty: 1 });
     expect(ok.availableQuantity).toBe(2);
     expect(ok.totalQuantity).toBe(3);
     expect(repo.reduceStock).toHaveBeenCalledWith('uuid', 1);
@@ -124,9 +127,9 @@ describe('BooksService (unit)', () => {
     repo.reduceStock.mockRejectedValueOnce(
       new ConflictException('Not enough copies'),
     );
-    await expect(service.borrow('uuid', 10)).rejects.toBeInstanceOf(
-      ConflictException,
-    );
+    await expect(
+      service.borrow({ id: 'uuid' }, { qty: 10 }),
+    ).rejects.toBeInstanceOf(ConflictException);
   });
 
   it('return: increments availableQuantity but not over totalQuantity', async () => {
@@ -136,24 +139,24 @@ describe('BooksService (unit)', () => {
       updatedAt: new Date('2020-01-01T00:00:00Z'),
     });
 
-    const ok = await service.return('uuid', 1);
+    const ok = await service.return({ id: 'uuid' }, { qty: 1 });
     expect(ok.availableQuantity).toBe(3);
     expect(ok.totalQuantity).toBe(3);
   });
 
   it('borrow/return: qty must be >= 1', async () => {
-    await expect(service.borrow('uuid', 0)).rejects.toBeInstanceOf(
-      BadRequestException,
-    );
-    await expect(service.return('uuid', -3)).rejects.toBeInstanceOf(
-      BadRequestException,
-    );
+    await expect(
+      service.borrow({ id: 'uuid' }, { qty: 0 }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    await expect(
+      service.return({ id: 'uuid' }, { qty: -3 }),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('borrow: not found passthrough', async () => {
     repo.reduceStock.mockRejectedValue(new NotFoundException());
-    await expect(service.borrow('missing', 1)).rejects.toBeInstanceOf(
-      NotFoundException,
-    );
+    await expect(
+      service.borrow({ id: 'missing' }, { qty: 1 }),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 });
