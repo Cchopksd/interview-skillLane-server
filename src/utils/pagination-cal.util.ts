@@ -24,5 +24,5 @@ export interface PaginationMetaInterface {
 
 export type Paginated<T> = {
   meta: PaginationMetaInterface;
-  data: T[];
+  data: T;
 };

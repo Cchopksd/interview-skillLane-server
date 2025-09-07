@@ -1,15 +1,18 @@
-import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class RequestBooksDto {
   @IsNumber()
-  @IsNotEmpty()
-  page: number;
+  @IsOptional()
+  @Transform(({ value }) => Number(value))
+  page: number = 1;
 
   @IsNumber()
-  @IsNotEmpty()
-  limit: number;
+  @IsOptional()
+  @Transform(({ value }) => Number(value))
+  limit: number = 10;
 
   @IsString()
-  @IsNotEmpty()
-  search: string;
+  @IsOptional()
+  search: string = '';
 }
