@@ -4,15 +4,21 @@ import { CreateBooksDto } from './dtos/create-books.dto';
 import { UpdateBooksDto } from './dtos/update-books.dto';
 import { RequestBooksIdDto } from './dtos/request-books-id.dto';
 import { RequestBooksDto } from './dtos/request-books.dto';
-import { Paginated, PaginationMeta } from 'src/utils/pagination-cal.util';
+import {
+  Paginated,
+  PaginationMeta,
+} from 'src/common/utils/pagination-cal.util';
 import { QtyBooksDto } from './dtos/qty-books.dto';
 import { BooksRepositoryInterface } from './interfaces/books.interface';
+import { Book } from './entities/books.entity';
+import { FileService } from 'src/files/file.service';
 
 @Injectable()
 export class BooksService implements BooksServiceInterface {
   constructor(
     @Inject('BOOK_REPOSITORY')
     private readonly booksRepository: BooksRepositoryInterface,
+    private readonly fileService: FileService,
   ) {}
 
   async findOne(dto: RequestBooksIdDto) {
@@ -28,19 +34,31 @@ export class BooksService implements BooksServiceInterface {
       dto.search,
     );
     const meta = PaginationMeta(dto.page, dto.limit, total);
-    return { meta, data: books } satisfies Paginated<any>;
+    return { meta, data: books } satisfies Paginated<Book[]>;
   }
 
-  async create(dto: CreateBooksDto) {
-    const book = await this.booksRepository.create(dto);
+  async create(dto: CreateBooksDto, file?: Express.Multer.File | null) {
+    const coverImage = file ? await this.fileService.uploadFile(file) : null;
+
+    const book = await this.booksRepository.create(dto as Book, coverImage);
     return book;
   }
 
-  async update({ id }: RequestBooksIdDto, dto: UpdateBooksDto) {
+  async update(
+    { id }: RequestBooksIdDto,
+    dto: UpdateBooksDto,
+    file?: Express.Multer.File | null,
+  ) {
     const existingBook = await this.booksRepository.findOne(id);
     if (!existingBook) throw new NotFoundException('Book not found');
 
-    const updatedBook = await this.booksRepository.update(id, dto);
+    const coverImage = file ? await this.fileService.uploadFile(file) : null;
+
+    const updatedBook = await this.booksRepository.update(
+      id,
+      dto as Book,
+      coverImage,
+    );
     return updatedBook;
   }
 

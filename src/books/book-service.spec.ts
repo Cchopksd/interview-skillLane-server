@@ -3,9 +3,11 @@ import {
   ConflictException,
   NotFoundException,
 } from '@nestjs/common';
-import { BooksService } from '../../src/books/books.service';
-import { BooksRepositoryInterface } from '../../src/books/interfaces/books.interface';
-import { Book } from '../../src/books/entities/books.entity';
+import { BooksService } from './books.service';
+import { BooksRepositoryInterface } from './interfaces/books.interface';
+import { Book } from './entities/books.entity';
+import { FileService } from 'src/files/file.service';
+import { Readable } from 'stream';
 
 function makeMockRepo(): jest.Mocked<BooksRepositoryInterface> {
   return {
@@ -26,7 +28,7 @@ describe('BooksService (unit)', () => {
     id: 'uuid',
     title: 'วิธีทำผัดกะเพรา',
     description: 'การทำผัดกะเพรา',
-    coverImage: 'https://example.com/cover.jpg',
+    coverImage: { url: 'https://example.com/cover.jpg', path: 'cover.jpg' },
     author: 'ประยุทธ์ จันทร์โอชา',
     publicationYear: 2008,
     totalQuantity: 3,
@@ -34,6 +36,16 @@ describe('BooksService (unit)', () => {
     ISBN: '1234567890',
     createdAt: new Date('2020-01-01T00:00:00Z'),
     updatedAt: new Date('2020-01-01T00:00:00Z'),
+  };
+
+  const file = {
+    originalname: 'cover.jpg',
+    buffer: Buffer.from(''),
+    fieldname: 'cover',
+    encoding: '7bit',
+    mimetype: 'image/jpg',
+    size: 100,
+    stream: new Readable(),
   };
 
   beforeAll(() => {
@@ -45,7 +57,7 @@ describe('BooksService (unit)', () => {
 
   beforeEach(() => {
     repo = makeMockRepo();
-    service = new BooksService(repo);
+    service = new BooksService(repo, new FileService());
   });
 
   it('create: should set availableQuantity = totalQuantity', async () => {
@@ -54,7 +66,6 @@ describe('BooksService (unit)', () => {
     const created = await service.create({
       title: baseBook.title,
       description: baseBook.description,
-      coverImage: baseBook.coverImage,
       author: baseBook.author,
       publicationYear: baseBook.publicationYear,
       totalQuantity: baseBook.totalQuantity,
@@ -83,7 +94,7 @@ describe('BooksService (unit)', () => {
       ...baseBook,
       title: 'วิธีทำผัดผัก',
       description: 'การทำผัดผัก',
-      coverImage: 'https://example.com/cover.jpg',
+      coverImage: { url: 'https://example.com/cover.jpg', path: 'cover.jpg' },
       author: 'สมชาย ยงใจยุทร',
       updatedAt: new Date('2020-01-01T00:00:00Z'),
     });
@@ -95,6 +106,18 @@ describe('BooksService (unit)', () => {
         description: 'การทำผัดผัก',
         author: 'สมชาย ยงใจยุทร',
       },
+      {
+        originalname: 'cover.jpg',
+        buffer: Buffer.from(''),
+        fieldname: 'cover',
+        encoding: '7bit',
+        mimetype: 'image/jpg',
+        size: 100,
+        stream: new Readable(),
+        destination: '',
+        filename: 'cover.jpg',
+        path: 'cover.jpg',
+      },
     );
 
     expect(updated.title).toBe('วิธีทำผัดผัก');
@@ -105,7 +128,7 @@ describe('BooksService (unit)', () => {
       expect.objectContaining({
         title: 'วิธีทำผัดผัก',
         description: 'การทำผัดผัก',
-        coverImage: 'https://example.com/cover.jpg',
+        coverImage: { url: 'https://example.com/cover.jpg', path: 'cover.jpg' },
         author: 'สมชาย ยงใจยุทร',
         updatedAt: expect.any(Date),
       }),

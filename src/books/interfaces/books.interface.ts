@@ -7,8 +7,15 @@ export interface BooksRepositoryInterface {
     limit: number,
     search: string,
   ): Promise<{ books: Book[]; total: number }>;
-  create(book: Partial<Book>): Promise<Book>;
-  update(id: string, book: Partial<Book>): Promise<Book>;
+  create(
+    book: Book,
+    file?: { url: string; path: string } | null,
+  ): Promise<Book>;
+  update(
+    id: string,
+    book: Book,
+    coverImage?: { url: string; path: string } | null,
+  ): Promise<Book>;
   delete(id: string): Promise<void>;
   reduceStock(id: string, qty: number): Promise<Book>;
   increaseStock(id: string, qty: number): Promise<Book>;

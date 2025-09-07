@@ -42,17 +42,31 @@ export class BookRepository implements BooksRepositoryInterface {
     return { books, total };
   }
 
-  async create(book: Partial<Book>): Promise<Book> {
-    const entity = this.repository.create(book);
-    return this.repository.save(entity);
+  async create(book: Book): Promise<Book> {
+    if (await this.isbnExists(book.ISBN)) {
+      throw new ConflictException('ISBN already exists');
+    }
+
+    const newBook = this.repository.create(book);
+
+    return this.repository.save(newBook);
   }
 
-  async update(id: string, book: Partial<Book>): Promise<Book> {
+  async update(
+    id: string,
+    book: Book,
+    coverImage: { url: string; path: string },
+  ): Promise<Book> {
     const existing = await this.repository.findOne({ where: { id } });
     if (!existing) {
       throw new NotFoundException('Book not found');
     }
+    if (await this.isbnExists(book.ISBN)) {
+      throw new ConflictException('ISBN already exists');
+    }
+
     const merged = this.repository.merge(existing, book);
+    merged.coverImage = coverImage;
     return this.repository.save(merged);
   }
 
@@ -100,5 +114,10 @@ export class BookRepository implements BooksRepositoryInterface {
       book.availableQuantity = next;
       return repo.save(book);
     });
+  }
+
+  private async isbnExists(isbn: string): Promise<boolean> {
+    const existing = await this.repository.findOne({ where: { ISBN: isbn } });
+    return !!existing;
   }
 }

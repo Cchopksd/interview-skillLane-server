@@ -3,7 +3,9 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { getDatabaseConfig } from './configs/database.config';
+import { getDatabaseConfig } from './common/configs/database.config';
+import { FileModule } from './files/file.module';
+import { BooksModule } from './books/books.module';
 
 @Module({
   imports: [
@@ -16,6 +18,8 @@ import { getDatabaseConfig } from './configs/database.config';
       useFactory: getDatabaseConfig,
       inject: [ConfigService],
     }),
+    FileModule,
+    BooksModule,
   ],
   controllers: [AppController],
   providers: [AppService],

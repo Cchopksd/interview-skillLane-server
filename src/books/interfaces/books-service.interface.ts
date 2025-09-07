@@ -1,4 +1,4 @@
-import { Paginated } from '../../utils/pagination-cal.util';
+import { Paginated } from '../../common/utils/pagination-cal.util';
 import { RequestBooksIdDto } from '../dtos/request-books-id.dto';
 import { Book } from '../entities/books.entity';
 import { CreateBooksDto } from '../dtos/create-books.dto';

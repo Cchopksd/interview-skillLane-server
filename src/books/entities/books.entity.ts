@@ -17,8 +17,8 @@ export class Book {
   @Column()
   description: string;
 
-  @Column()
-  coverImage: string;
+  @Column({ type: 'jsonb', default: { url: '', path: '' } })
+  coverImage: { url: string; path: string };
 
   @Column()
   totalQuantity: number;
