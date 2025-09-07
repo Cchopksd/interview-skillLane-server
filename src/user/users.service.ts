@@ -8,6 +8,7 @@ import { UserServiceInterface } from './interfaces/user-service.interface';
 import { CreateUserDto } from './dtos/create-user.dto';
 import { UserRepositoryInterface } from './interfaces/user.interface';
 import { User } from './entity/user.entity';
+import { PasswordUtils } from '../common/utils/password.utils';
 
 @Injectable()
 export class UsersService implements UserServiceInterface {
@@ -23,8 +24,10 @@ export class UsersService implements UserServiceInterface {
   }
 
   async create(dto: CreateUserDto): Promise<User> {
+    const hashedPassword = await PasswordUtils.hashPassword(dto.password);
     const userData = {
       ...dto,
+      password: hashedPassword,
     } as User;
 
     const user = await this.userRepository.create(userData);
