@@ -1,30 +1,39 @@
+// files/file.service.ts
 import { Injectable } from '@nestjs/common';
 import { writeFile, unlink, mkdir } from 'fs/promises';
-import { join } from 'path';
+import { join, extname, basename as pathBasename } from 'path';
 import { existsSync } from 'fs';
-import { v4 as uuid } from 'uuid';
 
 @Injectable()
 export class FileService {
   private readonly uploadPath = 'files';
   private readonly baseUrl = 'http://localhost:3000/files';
 
-  constructor() {
-    if (!existsSync(this.uploadPath)) {
-      mkdir(this.uploadPath, { recursive: true });
-    }
+  constructor() {}
+
+  private sanitizeName(name: string) {
+    const ext = extname(name);
+    const base = pathBasename(name, ext).replace(/[^a-z0-9-_]/gi, ''); // "cover"
+    return `${base}-${Date.now()}${ext}`;
   }
 
   async uploadFile(
     file: Express.Multer.File,
   ): Promise<{ url: string; path: string }> {
-    const { buffer, originalname } = file;
-    const safeName = originalname.replace(/[^a-zA-Z0-9.\-_]/g, '');
-    const filename = `${uuid()}-${safeName}`;
-    const path = join(this.uploadPath, filename);
+    try {
+      if (!existsSync(this.uploadPath)) {
+        await mkdir(this.uploadPath, { recursive: true });
+      }
 
-    await writeFile(path, buffer);
-    return { url: `${this.baseUrl}/${filename}`, path };
+      const safeName = this.sanitizeName(file.originalname);
+      const path = join(this.uploadPath, safeName);
+      await writeFile(path, file.buffer);
+
+      return { url: `${this.baseUrl}/${safeName}`, path };
+    } catch (err) {
+      console.error(`Failed to upload file: ${file.originalname}`, err);
+      throw err;
+    }
   }
 
   async deleteFile(path: string): Promise<void> {

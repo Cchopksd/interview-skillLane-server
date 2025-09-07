@@ -52,11 +52,7 @@ export class BookRepository implements BooksRepositoryInterface {
     return this.repository.save(newBook);
   }
 
-  async update(
-    id: string,
-    book: Book,
-    coverImage: { url: string; path: string },
-  ): Promise<Book> {
+  async update(id: string, book: Book): Promise<Book> {
     const existing = await this.repository.findOne({ where: { id } });
     if (!existing) {
       throw new NotFoundException('Book not found');
@@ -66,7 +62,6 @@ export class BookRepository implements BooksRepositoryInterface {
     }
 
     const merged = this.repository.merge(existing, book);
-    merged.coverImage = coverImage;
     return this.repository.save(merged);
   }
 

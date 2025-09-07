@@ -11,11 +11,7 @@ export interface BooksRepositoryInterface {
     book: Book,
     file?: { url: string; path: string } | null,
   ): Promise<Book>;
-  update(
-    id: string,
-    book: Book,
-    coverImage?: { url: string; path: string } | null,
-  ): Promise<Book>;
+  update(id: string, book: Book): Promise<Book>;
   delete(id: string): Promise<void>;
   reduceStock(id: string, qty: number): Promise<Book>;
   increaseStock(id: string, qty: number): Promise<Book>;

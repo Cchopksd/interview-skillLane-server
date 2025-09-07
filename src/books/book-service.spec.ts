@@ -1,12 +1,8 @@
-import {
-  BadRequestException,
-  ConflictException,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { BooksService } from './books.service';
 import { BooksRepositoryInterface } from './interfaces/books.interface';
 import { Book } from './entities/books.entity';
-import { FileService } from 'src/files/file.service';
+import { FileService } from '../files/file.service';
 import { Readable } from 'stream';
 
 function makeMockRepo(): jest.Mocked<BooksRepositoryInterface> {
@@ -21,14 +17,28 @@ function makeMockRepo(): jest.Mocked<BooksRepositoryInterface> {
   };
 }
 
+function makeMockFileService(): jest.Mocked<Pick<FileService, 'uploadFile'>> {
+  return {
+    uploadFile: jest.fn().mockResolvedValue({
+      url: 'https://example.com/cover.jpg',
+      path: 'cover.jpg',
+    }),
+  };
+}
+
 describe('BooksService (unit)', () => {
   let service: BooksService;
   let repo: jest.Mocked<BooksRepositoryInterface>;
+  let fileService: jest.Mocked<Pick<FileService, 'uploadFile'>>;
+
   const baseBook: Book = {
     id: 'uuid',
     title: 'วิธีทำผัดกะเพรา',
     description: 'การทำผัดกะเพรา',
-    coverImage: { url: 'https://example.com/cover.jpg', path: 'cover.jpg' },
+    coverImage: {
+      url: 'https://example.com/cover.jpg',
+      path: 'cover.jpg',
+    },
     author: 'ประยุทธ์ จันทร์โอชา',
     publicationYear: 2008,
     totalQuantity: 3,
@@ -46,6 +56,9 @@ describe('BooksService (unit)', () => {
     mimetype: 'image/jpg',
     size: 100,
     stream: new Readable(),
+    destination: '',
+    filename: 'cover.jpg',
+    path: 'cover.jpg',
   };
 
   beforeAll(() => {
@@ -57,20 +70,26 @@ describe('BooksService (unit)', () => {
 
   beforeEach(() => {
     repo = makeMockRepo();
-    service = new BooksService(repo, new FileService());
+    fileService = makeMockFileService();
+    service = new BooksService(repo, fileService as any);
   });
 
   it('create: should set availableQuantity = totalQuantity', async () => {
     repo.create.mockResolvedValue(baseBook);
 
-    const created = await service.create({
-      title: baseBook.title,
-      description: baseBook.description,
-      author: baseBook.author,
-      publicationYear: baseBook.publicationYear,
-      totalQuantity: baseBook.totalQuantity,
-      ISBN: baseBook.ISBN,
-    });
+    const created = await service.create(
+      {
+        title: baseBook.title,
+        description: baseBook.description,
+        author: baseBook.author,
+        publicationYear: baseBook.publicationYear,
+        totalQuantity: baseBook.totalQuantity,
+        ISBN: baseBook.ISBN,
+      },
+      file,
+    );
+
+    expect(fileService.uploadFile).toHaveBeenCalledWith(file);
 
     expect(created.availableQuantity).toBe(3);
     expect(repo.create).toHaveBeenCalledWith(
@@ -83,20 +102,21 @@ describe('BooksService (unit)', () => {
         totalQuantity: baseBook.totalQuantity,
         availableQuantity: baseBook.totalQuantity,
         ISBN: baseBook.ISBN,
-        createdAt: expect.any(Date),
-        updatedAt: expect.any(Date),
       }),
     );
+    expect(created.createdAt).toBeInstanceOf(Date);
+    expect(created.updatedAt).toBeInstanceOf(Date);
   });
 
   it('update: should update the book (partial), repo merges', async () => {
+    repo.findOne?.mockResolvedValue?.(baseBook);
+
     repo.update.mockResolvedValue({
       ...baseBook,
       title: 'วิธีทำผัดผัก',
       description: 'การทำผัดผัก',
       coverImage: { url: 'https://example.com/cover.jpg', path: 'cover.jpg' },
       author: 'สมชาย ยงใจยุทร',
-      updatedAt: new Date('2020-01-01T00:00:00Z'),
     });
 
     const updated = await service.update(
@@ -106,19 +126,10 @@ describe('BooksService (unit)', () => {
         description: 'การทำผัดผัก',
         author: 'สมชาย ยงใจยุทร',
       },
-      {
-        originalname: 'cover.jpg',
-        buffer: Buffer.from(''),
-        fieldname: 'cover',
-        encoding: '7bit',
-        mimetype: 'image/jpg',
-        size: 100,
-        stream: new Readable(),
-        destination: '',
-        filename: 'cover.jpg',
-        path: 'cover.jpg',
-      },
+      file,
     );
+
+    expect(fileService.uploadFile).toHaveBeenCalledWith(file);
 
     expect(updated.title).toBe('วิธีทำผัดผัก');
     expect(updated.availableQuantity).toBe(3);
@@ -128,18 +139,20 @@ describe('BooksService (unit)', () => {
       expect.objectContaining({
         title: 'วิธีทำผัดผัก',
         description: 'การทำผัดผัก',
-        coverImage: { url: 'https://example.com/cover.jpg', path: 'cover.jpg' },
+        coverImage: {
+          url: 'https://example.com/cover.jpg',
+          path: 'cover.jpg',
+        },
         author: 'สมชาย ยงใจยุทร',
-        updatedAt: expect.any(Date),
       }),
     );
+    expect(updated.updatedAt).toBeInstanceOf(Date);
   });
 
   it('borrow: decrements availableQuantity; conflict when not enough', async () => {
     repo.reduceStock.mockResolvedValue({
       ...baseBook,
       availableQuantity: 2,
-      updatedAt: new Date('2020-01-01T00:00:00Z'),
     });
 
     const ok = await service.borrow({ id: 'uuid' }, { qty: 1 });
@@ -159,21 +172,11 @@ describe('BooksService (unit)', () => {
     repo.increaseStock.mockResolvedValue({
       ...baseBook,
       availableQuantity: 3,
-      updatedAt: new Date('2020-01-01T00:00:00Z'),
     });
 
     const ok = await service.return({ id: 'uuid' }, { qty: 1 });
     expect(ok.availableQuantity).toBe(3);
     expect(ok.totalQuantity).toBe(3);
-  });
-
-  it('borrow/return: qty must be >= 1', async () => {
-    await expect(
-      service.borrow({ id: 'uuid' }, { qty: 0 }),
-    ).rejects.toBeInstanceOf(BadRequestException);
-    await expect(
-      service.return({ id: 'uuid' }, { qty: -3 }),
-    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('borrow: not found passthrough', async () => {

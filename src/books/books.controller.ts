@@ -16,7 +16,7 @@ import { UpdateBooksDto } from './dtos/update-books.dto';
 import { QtyBooksDto } from './dtos/qty-books.dto';
 import { UploadedImage } from 'src/common/decorators/file-validators.decorator';
 
-@Controller('books')
+@Controller('v1/books')
 export class BooksController {
   constructor(private readonly booksService: BooksService) {}
 

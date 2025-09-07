@@ -4,14 +4,11 @@ import { CreateBooksDto } from './dtos/create-books.dto';
 import { UpdateBooksDto } from './dtos/update-books.dto';
 import { RequestBooksIdDto } from './dtos/request-books-id.dto';
 import { RequestBooksDto } from './dtos/request-books.dto';
-import {
-  Paginated,
-  PaginationMeta,
-} from 'src/common/utils/pagination-cal.util';
+import { Paginated, PaginationMeta } from '@utils/pagination-cal.util';
 import { QtyBooksDto } from './dtos/qty-books.dto';
 import { BooksRepositoryInterface } from './interfaces/books.interface';
 import { Book } from './entities/books.entity';
-import { FileService } from 'src/files/file.service';
+import { FileService } from '../files/file.service';
 
 @Injectable()
 export class BooksService implements BooksServiceInterface {
@@ -38,9 +35,15 @@ export class BooksService implements BooksServiceInterface {
   }
 
   async create(dto: CreateBooksDto, file?: Express.Multer.File | null) {
-    const coverImage = file ? await this.fileService.uploadFile(file) : null;
+    const coverImage = file && (await this.fileService.uploadFile(file));
 
-    const book = await this.booksRepository.create(dto as Book, coverImage);
+    const bookData = {
+      ...dto,
+      availableQuantity: dto.totalQuantity,
+      coverImage: coverImage,
+    } as Book;
+
+    const book = await this.booksRepository.create(bookData);
     return book;
   }
 
@@ -52,13 +55,14 @@ export class BooksService implements BooksServiceInterface {
     const existingBook = await this.booksRepository.findOne(id);
     if (!existingBook) throw new NotFoundException('Book not found');
 
-    const coverImage = file ? await this.fileService.uploadFile(file) : null;
+    const coverImage = file && (await this.fileService.uploadFile(file));
 
-    const updatedBook = await this.booksRepository.update(
-      id,
-      dto as Book,
-      coverImage,
-    );
+    const bookData = {
+      ...dto,
+      ...(coverImage && { coverImage }),
+    } as Book;
+
+    const updatedBook = await this.booksRepository.update(id, bookData);
     return updatedBook;
   }
 
