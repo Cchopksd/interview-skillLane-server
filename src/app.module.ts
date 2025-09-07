@@ -6,6 +6,7 @@ import { AppService } from './app.service';
 import { getDatabaseConfig } from './common/configs/database.config';
 import { FileModule } from './files/file.module';
 import { BooksModule } from './books/books.module';
+import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { BooksModule } from './books/books.module';
     }),
     FileModule,
     BooksModule,
+    UserModule,
   ],
   controllers: [AppController],
   providers: [AppService],
