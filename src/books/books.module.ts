@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { MulterModule } from '@nestjs/platform-express';
 import { Book } from './entities/books.entity';
 import { BorrowRecord } from './entities/borrow_recoards.entity';
 import { User } from '../user/entity/user.entity';
@@ -13,6 +14,11 @@ import { BooksController } from './books.controller';
 @Module({
   imports: [
     TypeOrmModule.forFeature([Book, BorrowRecord, User]),
+    MulterModule.register({
+      limits: {
+        fileSize: 10 * 1024 * 1024,
+      },
+    }),
     FileModule,
     UserModule,
   ],
