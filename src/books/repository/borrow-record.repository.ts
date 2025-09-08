@@ -140,7 +140,6 @@ export class BorrowRecordRepository implements BorrowRecordRepositoryInterface {
       });
       if (!book) throw new NotFoundException('Book not found');
 
-      // Find active borrow record
       const borrowRecord = await borrowRecordRepo.findOne({
         where: {
           user: { id: userId },
@@ -155,7 +154,6 @@ export class BorrowRecordRepository implements BorrowRecordRepositoryInterface {
         );
       }
 
-      // Update book stock
       const next = book.availableQuantity + 1;
       if (next > book.totalQuantity) {
         throw new ConflictException('Book stock is full');
@@ -163,7 +161,6 @@ export class BorrowRecordRepository implements BorrowRecordRepositoryInterface {
       book.availableQuantity = next;
       const updatedBook = await bookRepo.save(book);
 
-      // Mark as returned
       borrowRecord.returnedAt = new Date();
       const updatedBorrowRecord = await borrowRecordRepo.save(borrowRecord);
 

@@ -108,7 +108,7 @@ export class BooksService implements BooksServiceInterface {
     const borrowHistory =
       await this.borrowRecordRepository.getBookBorrowHistory(id, userId);
     if (!borrowHistory) {
-      throw new NotFoundException('Borrow history not found');
+      return null;
     }
 
     return borrowHistory;
