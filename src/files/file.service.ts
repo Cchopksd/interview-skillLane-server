@@ -3,13 +3,16 @@ import { Injectable } from '@nestjs/common';
 import { writeFile, unlink, mkdir } from 'fs/promises';
 import { join, extname, basename as pathBasename } from 'path';
 import { existsSync } from 'fs';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class FileService {
   private readonly uploadPath = 'files';
-  private readonly baseUrl = 'http://localhost:3000/files';
+  private readonly baseUrl: string;
 
-  constructor() {}
+  constructor(private readonly configService: ConfigService) {
+    this.baseUrl = `http://localhost:${this.configService.get('PORT')}/files`;
+  }
 
   private sanitizeName(name: string) {
     const ext = extname(name);
