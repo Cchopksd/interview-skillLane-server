@@ -43,7 +43,6 @@ export class BorrowRecordRepository implements BorrowRecordRepositoryInterface {
         returnedAt: IsNull(),
       },
       relations: ['book'],
-      order: { borrowedAt: 'DESC' },
     });
   }
 
@@ -54,7 +53,6 @@ export class BorrowRecordRepository implements BorrowRecordRepositoryInterface {
         returnedAt: IsNull(),
       },
       relations: ['user'],
-      order: { borrowedAt: 'DESC' },
     });
   }
 
@@ -173,19 +171,17 @@ export class BorrowRecordRepository implements BorrowRecordRepositoryInterface {
     });
   }
 
-  async getUserBorrowHistory(userId: string): Promise<BorrowRecord[]> {
-    return this.repository.find({
-      where: { user: { id: userId } },
-      relations: ['book'],
-      order: { borrowedAt: 'DESC' },
-    });
-  }
-
-  async getBookBorrowHistory(bookId: string): Promise<BorrowRecord[]> {
-    return this.repository.find({
-      where: { book: { id: bookId } },
-      relations: ['user'],
-      order: { borrowedAt: 'DESC' },
+  async getBookBorrowHistory(
+    bookId: string,
+    userId: string,
+  ): Promise<BorrowRecord | null> {
+    return this.repository.findOne({
+      where: {
+        book: { id: bookId },
+        user: { id: userId },
+        returnedAt: IsNull(),
+      },
+      relations: ['user', 'book'],
     });
   }
 }

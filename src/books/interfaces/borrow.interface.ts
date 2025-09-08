@@ -19,6 +19,8 @@ export interface BorrowRecordRepositoryInterface {
     bookId: string,
     userId: string,
   ): Promise<{ book: Book; borrowRecord: BorrowRecord }>;
-  getUserBorrowHistory(userId: string): Promise<BorrowRecord[]>;
-  getBookBorrowHistory(bookId: string): Promise<BorrowRecord[]>;
+  getBookBorrowHistory(
+    bookId: string,
+    userId: string,
+  ): Promise<BorrowRecord | null>;
 }

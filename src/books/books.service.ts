@@ -98,17 +98,19 @@ export class BooksService implements BooksServiceInterface {
     return result.book;
   }
 
-  async getUserBorrowHistory(userId: string): Promise<BorrowRecord[]> {
+  async getBookBorrowHistory(
+    { id }: RequestBooksIdDto,
+    userId: string,
+  ): Promise<BorrowRecord | null> {
     if (!userId) {
       throw new BadRequestException('User ID is required');
     }
+    const borrowHistory =
+      await this.borrowRecordRepository.getBookBorrowHistory(id, userId);
+    if (!borrowHistory) {
+      throw new NotFoundException('Borrow history not found');
+    }
 
-    return this.borrowRecordRepository.getUserBorrowHistory(userId);
-  }
-
-  async getBookBorrowHistory({
-    id,
-  }: RequestBooksIdDto): Promise<BorrowRecord[]> {
-    return this.borrowRecordRepository.getBookBorrowHistory(id);
+    return borrowHistory;
   }
 }

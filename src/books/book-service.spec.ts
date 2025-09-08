@@ -32,7 +32,6 @@ function makeMockBorrowRecordRepo(): jest.Mocked<BorrowRecordRepositoryInterface
     findById: jest.fn(),
     borrowBook: jest.fn(),
     returnBook: jest.fn(),
-    getUserBorrowHistory: jest.fn(),
     getBookBorrowHistory: jest.fn(),
   };
 }
@@ -235,14 +234,18 @@ describe('BooksService (unit)', () => {
     );
   });
 
-  it('getUserBorrowHistory: should return user borrow history', async () => {
-    const borrowHistory = [baseBorrowRecord];
-    borrowRecordRepo.getUserBorrowHistory.mockResolvedValue(borrowHistory);
+  it('getBookBorrowHistory: should return user borrow history', async () => {
+    const borrowHistory = baseBorrowRecord;
+    borrowRecordRepo.getBookBorrowHistory.mockResolvedValue(borrowHistory);
 
-    const result = await service.getUserBorrowHistory('user-uuid');
+    const result = await service.getBookBorrowHistory(
+      { id: 'uuid' },
+      'user-uuid',
+    );
 
     expect(result).toEqual(borrowHistory);
-    expect(borrowRecordRepo.getUserBorrowHistory).toHaveBeenCalledWith(
+    expect(borrowRecordRepo.getBookBorrowHistory).toHaveBeenCalledWith(
+      'uuid',
       'user-uuid',
     );
   });

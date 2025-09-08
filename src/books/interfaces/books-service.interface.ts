@@ -14,6 +14,8 @@ export interface BooksServiceInterface {
   delete(id: RequestBooksIdDto): Promise<void>;
   borrow(id: RequestBooksIdDto, userId: string): Promise<Book>;
   return(id: RequestBooksIdDto, userId: string): Promise<Book>;
-  getUserBorrowHistory(userId: string): Promise<BorrowRecord[]>;
-  getBookBorrowHistory(id: RequestBooksIdDto): Promise<BorrowRecord[]>;
+  getBookBorrowHistory(
+    id: RequestBooksIdDto,
+    userId: string,
+  ): Promise<BorrowRecord | null>;
 }

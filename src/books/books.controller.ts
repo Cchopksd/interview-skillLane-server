@@ -105,22 +105,16 @@ export class BooksController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get('my-borrows')
-  async getMyBorrowHistory(@Request() req: any) {
+  @Get(':id/my-borrows')
+  async getBookBorrowHistory(
+    @Param() dto: RequestBooksIdDto,
+    @Request() req: any,
+  ) {
     const userId = req.user.id;
     return {
       statusCode: HttpStatus.OK,
-      message: 'User borrow history fetched successfully',
-      data: await this.booksService.getUserBorrowHistory(userId),
-    };
-  }
-
-  @Get(':id/borrow-history')
-  async getBookBorrowHistory(@Param() dto: RequestBooksIdDto) {
-    return {
-      statusCode: HttpStatus.OK,
-      message: 'Book borrow history fetched successfully',
-      data: await this.booksService.getBookBorrowHistory(dto),
+      message: 'Book my borrow fetched successfully',
+      data: await this.booksService.getBookBorrowHistory(dto, userId),
     };
   }
 }
