@@ -23,7 +23,7 @@ Create a `.env` file in the `server` directory:
 
 ```bash
 # Database Configuration
-POSTGRES_HOST=localhost
+POSTGRES_HOST=postgres
 POSTGRES_PORT=5432
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=password
