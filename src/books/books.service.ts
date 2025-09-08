@@ -70,6 +70,12 @@ export class BooksService implements BooksServiceInterface {
       ...(coverImage && { coverImage }),
     } as Book;
 
+    if (dto.totalQuantity !== undefined) {
+      const borrowedCount =
+        existingBook.totalQuantity - existingBook.availableQuantity;
+      bookData.availableQuantity = dto.totalQuantity - borrowedCount;
+    }
+
     const updatedBook = await this.booksRepository.update(id, bookData);
     return updatedBook;
   }
