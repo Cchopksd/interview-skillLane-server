@@ -91,6 +91,7 @@ export class BooksController {
     @Request() req: any,
   ) {
     const userId = req.user.id;
+    console.log(userId);
     return {
       statusCode: HttpStatus.OK,
       message: 'Book borrowed successfully',
