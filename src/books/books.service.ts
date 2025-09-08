@@ -33,14 +33,14 @@ export class BooksService implements BooksServiceInterface {
     return book;
   }
 
-  async findAll(dto: RequestBooksDto) {
+  async findAll(dto: RequestBooksDto): Promise<Paginated<Book[]>> {
     const { books, total } = await this.booksRepository.findAll(
       dto.page,
       dto.limit,
       dto.search,
     );
     const meta = PaginationMeta(dto.page, dto.limit, total);
-    return { meta, data: books } satisfies Paginated<Book[]>;
+    return { meta, data: books };
   }
 
   async create(dto: CreateBooksDto, file?: Express.Multer.File | null) {

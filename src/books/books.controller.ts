@@ -29,7 +29,7 @@ export class BooksController {
     return {
       statusCode: HttpStatus.OK,
       message: 'Books fetched successfully',
-      data: this.booksService.findAll(dto),
+      data: await this.booksService.findAll(dto),
     };
   }
 
@@ -38,7 +38,7 @@ export class BooksController {
     return {
       statusCode: HttpStatus.OK,
       message: 'Book fetched successfully',
-      data: this.booksService.findOne(dto),
+      data: await this.booksService.findOne(dto),
     };
   }
 
@@ -51,7 +51,7 @@ export class BooksController {
     return {
       statusCode: HttpStatus.CREATED,
       message: 'Book created successfully',
-      data: this.booksService.create(dto, file),
+      data: await this.booksService.create(dto, file),
     };
   }
 
@@ -65,7 +65,7 @@ export class BooksController {
     return {
       statusCode: HttpStatus.OK,
       message: 'Book updated successfully',
-      data: this.booksService.update(dto, book, file),
+      data: await this.booksService.update(dto, book, file),
     };
   }
 
@@ -75,7 +75,7 @@ export class BooksController {
     return {
       statusCode: HttpStatus.OK,
       message: 'Book deleted successfully',
-      data: this.booksService.delete(dto),
+      data: await this.booksService.delete(dto),
     };
   }
 
@@ -90,7 +90,7 @@ export class BooksController {
     return {
       statusCode: HttpStatus.OK,
       message: 'Book borrowed successfully',
-      data: this.booksService.borrow(dto, qty, userId),
+      data: await this.booksService.borrow(dto, qty, userId),
     };
   }
 
@@ -105,7 +105,7 @@ export class BooksController {
     return {
       statusCode: HttpStatus.OK,
       message: 'Book returned successfully',
-      data: this.booksService.return(dto, qty, userId),
+      data: await this.booksService.return(dto, qty, userId),
     };
   }
 
@@ -116,7 +116,7 @@ export class BooksController {
     return {
       statusCode: HttpStatus.OK,
       message: 'User borrow history fetched successfully',
-      data: this.booksService.getUserBorrowHistory(userId),
+      data: await this.booksService.getUserBorrowHistory(userId),
     };
   }
 
@@ -125,7 +125,7 @@ export class BooksController {
     return {
       statusCode: HttpStatus.OK,
       message: 'Book borrow history fetched successfully',
-      data: this.booksService.getBookBorrowHistory(dto),
+      data: await this.booksService.getBookBorrowHistory(dto),
     };
   }
 }
