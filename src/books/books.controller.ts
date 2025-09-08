@@ -46,6 +46,7 @@ export class BooksController {
 
   @UseGuards(JwtAuthGuard)
   @Post()
+  @UseInterceptors(FileInterceptor('cover'))
   async create(
     @Body() dto: CreateBooksDto,
     @UploadedImage() file: Express.Multer.File,
