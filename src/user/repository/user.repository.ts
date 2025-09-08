@@ -3,7 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../entity/user.entity';
 import { UserRepositoryInterface } from '../interfaces/user.interface';
-import { PasswordUtils } from '@utils/password.utils';
 
 @Injectable()
 export class UserRepository implements UserRepositoryInterface {
@@ -20,12 +19,6 @@ export class UserRepository implements UserRepositoryInterface {
       throw new ConflictException('Username already exists');
     }
 
-    const hashedPassword = await PasswordUtils.hashPassword(user.password);
-
-    const newUser = this.repository.create({
-      ...user,
-      password: hashedPassword,
-    });
-    return this.repository.save(newUser);
+    return this.repository.save(user);
   }
 }

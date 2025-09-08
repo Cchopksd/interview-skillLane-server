@@ -7,10 +7,15 @@ import { BooksService } from './books.service';
 import { BookRepository } from './repository/books.repository';
 import { BorrowRecordRepository } from './repository/borrow-record.repository';
 import { FileModule } from 'src/files/file.module';
+import { UserModule } from '../user/user.module';
 import { BooksController } from './books.controller';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Book, BorrowRecord, User]), FileModule],
+  imports: [
+    TypeOrmModule.forFeature([Book, BorrowRecord, User]),
+    FileModule,
+    UserModule,
+  ],
   controllers: [BooksController],
   providers: [
     { provide: 'BOOK_REPOSITORY', useClass: BookRepository },

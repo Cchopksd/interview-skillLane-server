@@ -11,20 +11,19 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async validateUser(username: string, password: string): Promise<any> {
+  async validateUser(username: string, password: string) {
     try {
       const user = await this.usersService.findByUsername(username);
       const isPasswordValid = await PasswordUtils.comparePassword({
         password,
         hashedPassword: user.password,
       });
-
       if (isPasswordValid) {
         return user;
       }
-      return null;
+      throw new UnauthorizedException('username or password is incorrect');
     } catch (error) {
-      return null;
+      throw new UnauthorizedException('username or password is incorrect');
     }
   }
 
@@ -32,7 +31,7 @@ export class AuthService {
     const user = await this.validateUser(loginDto.username, loginDto.password);
 
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('username or password is incorrect');
     }
 
     const payload = { username: user.username, sub: user.id };
