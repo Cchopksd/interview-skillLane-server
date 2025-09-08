@@ -57,7 +57,7 @@ export class BookRepository implements BooksRepositoryInterface {
     if (!existing) {
       throw new NotFoundException('Book not found');
     }
-    if (await this.isbnExists(book.ISBN)) {
+    if ((await this.isbnExists(book.ISBN)) && book.ISBN !== existing.ISBN ) {
       throw new ConflictException('ISBN already exists');
     }
 
