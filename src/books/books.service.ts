@@ -82,8 +82,6 @@ export class BooksService implements BooksServiceInterface {
   }
 
   async borrow({ id }: RequestBooksIdDto, dto: QtyBooksDto, userId: string) {
-    const qty = Number(dto.qty);
-
     if (!userId) {
       throw new BadRequestException('User ID is required');
     }
@@ -91,15 +89,13 @@ export class BooksService implements BooksServiceInterface {
     const result = await this.borrowRecordRepository.borrowBook(
       id,
       userId,
-      qty,
+      dto.qty,
       7,
     );
     return result.book;
   }
 
   async return({ id }: RequestBooksIdDto, dto: QtyBooksDto, userId: string) {
-    const qty = Number(dto.qty);
-
     if (!userId) {
       throw new BadRequestException('User ID is required');
     }
@@ -107,7 +103,7 @@ export class BooksService implements BooksServiceInterface {
     const result = await this.borrowRecordRepository.returnBook(
       id,
       userId,
-      qty,
+      dto.qty,
     );
     return result.book;
   }
