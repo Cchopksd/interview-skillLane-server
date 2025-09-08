@@ -73,18 +73,15 @@ export class BorrowRecordRepository implements BorrowRecordRepositoryInterface {
       const borrowRecordRepo = manager.getRepository(BorrowRecord);
       const userRepo = manager.getRepository(User);
 
-      // Get book with lock
       const book = await bookRepo.findOne({
         where: { id: bookId },
         lock: { mode: 'pessimistic_write' },
       });
       if (!book) throw new NotFoundException('Book not found');
 
-      // Get user
       const user = await userRepo.findOne({ where: { id: userId } });
       if (!user) throw new NotFoundException('User not found');
 
-      // Check if user already has an active borrow for this book
       const existingBorrow = await borrowRecordRepo.findOne({
         where: {
           user: { id: userId },
@@ -98,17 +95,14 @@ export class BorrowRecordRepository implements BorrowRecordRepositoryInterface {
         );
       }
 
-      // Check stock availability
       const next = book.availableQuantity - 1;
       if (next < 0) {
         throw new ConflictException('Book stock is not enough');
       }
 
-      // Update book stock
       book.availableQuantity = next;
       const updatedBook = await bookRepo.save(book);
 
-      // Create borrow record
       const borrowedAt = new Date();
       const dueDate = new Date();
       dueDate.setDate(dueDate.getDate() + days);
@@ -133,7 +127,6 @@ export class BorrowRecordRepository implements BorrowRecordRepositoryInterface {
       const bookRepo = manager.getRepository(Book);
       const borrowRecordRepo = manager.getRepository(BorrowRecord);
 
-      // Get book with lock
       const book = await bookRepo.findOne({
         where: { id: bookId },
         lock: { mode: 'pessimistic_write' },
