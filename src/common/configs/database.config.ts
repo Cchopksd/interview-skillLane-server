@@ -10,7 +10,7 @@ export const getDatabaseConfig = (
   username: configService.get<string>('POSTGRES_USER', 'postgres'),
   password: configService.get<string>('POSTGRES_PASSWORD', 'password'),
   database: configService.get<string>('POSTGRES_DB', 'skilllane_db'),
-  entities: [__dirname + '/../**/*.entity{.ts,.js}'],
+  entities: [__dirname + '/../../**/*.entity{.ts,.js}'],
   synchronize: true,
   logging: false,
 });
