@@ -34,29 +34,6 @@ PORT=3000
 JWT_SECRET=secretNaja
 ```
 
-### 3. Install Dependencies
-
-```bash
-npm install
-```
-
-### 4. Start the Database
-
-Using Docker Compose (Recommended):
-
-```bash
-docker-compose up -d
-```
-
-```bash
-# Development mode (with hot reload)
-npm run start:dev
-
-# Production mode
-npm run build
-npm run start:prod
-```
-
 ```bash
 # Unit tests
 npm run test
@@ -91,14 +68,8 @@ The application includes Docker and Docker Compose configuration for easy setup:
 # Start both database and application
 docker-compose up -d
 
-# View logs
-docker-compose logs -f
-
 # Stop all services
 docker-compose down
-
-# Stop and remove volumes
-docker-compose down -v
 
 # Rebuild and start
 docker-compose up --build -d
