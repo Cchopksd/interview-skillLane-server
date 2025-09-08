@@ -4,12 +4,18 @@ import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
 import * as morgan from 'morgan';
 import { json, urlencoded } from 'express';
+import { join } from 'path';
+import { NestExpressApplication } from '@nestjs/platform-express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   app.use(json({ limit: '10mb' }));
   app.use(urlencoded({ limit: '10mb', extended: true }));
+
+  app.useStaticAssets(join(__dirname, '..', 'files'), {
+    prefix: '/files/',
+  });
 
   app.use(helmet());
   app.use(morgan('combined'));

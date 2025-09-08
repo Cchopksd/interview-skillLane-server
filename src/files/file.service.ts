@@ -11,7 +11,8 @@ export class FileService {
   private readonly baseUrl: string;
 
   constructor(private readonly configService: ConfigService) {
-    this.baseUrl = `http://localhost:${this.configService.get('PORT')}/files`;
+    const port = this.configService.get('PORT') || 3000;
+    this.baseUrl = `http://localhost:${port}/files`;
   }
 
   private sanitizeName(name: string) {
