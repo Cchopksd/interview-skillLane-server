@@ -1,4 +1,9 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { BooksServiceInterface } from './interfaces/books-service.interface';
 import { CreateBooksDto } from './dtos/create-books.dto';
 import { UpdateBooksDto } from './dtos/update-books.dto';
@@ -7,7 +12,9 @@ import { RequestBooksDto } from './dtos/request-books.dto';
 import { Paginated, PaginationMeta } from '@utils/pagination-cal.util';
 import { QtyBooksDto } from './dtos/qty-books.dto';
 import { BooksRepositoryInterface } from './interfaces/books.interface';
+import { BorrowRecordRepositoryInterface } from './repository/borrow-record.repository';
 import { Book } from './entities/books.entity';
+import { BorrowRecord } from './entities/borrow_recoards.entity';
 import { FileService } from '../files/file.service';
 
 @Injectable()
@@ -15,6 +22,8 @@ export class BooksService implements BooksServiceInterface {
   constructor(
     @Inject('BOOK_REPOSITORY')
     private readonly booksRepository: BooksRepositoryInterface,
+    @Inject('BORROW_RECORD_REPOSITORY')
+    private readonly borrowRecordRepository: BorrowRecordRepositoryInterface,
     private readonly fileService: FileService,
   ) {}
 
@@ -72,11 +81,48 @@ export class BooksService implements BooksServiceInterface {
     await this.booksRepository.delete(id);
   }
 
-  async borrow({ id }: RequestBooksIdDto, dto: QtyBooksDto) {
-    return this.booksRepository.reduceStock(id, dto.qty);
+  async borrow({ id }: RequestBooksIdDto, dto: QtyBooksDto, userId: string) {
+    const qty = Number(dto.qty);
+
+    if (!userId) {
+      throw new BadRequestException('User ID is required');
+    }
+
+    const result = await this.borrowRecordRepository.borrowBook(
+      id,
+      userId,
+      qty,
+      7,
+    );
+    return result.book;
   }
 
-  async return({ id }: RequestBooksIdDto, dto: QtyBooksDto) {
-    return this.booksRepository.increaseStock(id, dto.qty);
+  async return({ id }: RequestBooksIdDto, dto: QtyBooksDto, userId: string) {
+    const qty = Number(dto.qty);
+
+    if (!userId) {
+      throw new BadRequestException('User ID is required');
+    }
+
+    const result = await this.borrowRecordRepository.returnBook(
+      id,
+      userId,
+      qty,
+    );
+    return result.book;
+  }
+
+  async getUserBorrowHistory(userId: string): Promise<BorrowRecord[]> {
+    if (!userId) {
+      throw new BadRequestException('User ID is required');
+    }
+
+    return this.borrowRecordRepository.getUserBorrowHistory(userId);
+  }
+
+  async getBookBorrowHistory({
+    id,
+  }: RequestBooksIdDto): Promise<BorrowRecord[]> {
+    return this.borrowRecordRepository.getBookBorrowHistory(id);
   }
 }

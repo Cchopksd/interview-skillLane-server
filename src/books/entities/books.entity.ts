@@ -2,9 +2,11 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { BorrowRecord } from './borrow_recoards.entity';
 
 @Entity('books')
 export class Book {
@@ -29,15 +31,18 @@ export class Book {
   @Column()
   author: string;
 
-  @Column()
+  @Column({ unique: true })
   ISBN: string;
 
   @Column()
   publicationYear: number;
 
   @CreateDateColumn()
-  createdAt!: Date;
+  createdAt: Date;
 
   @UpdateDateColumn()
-  updatedAt!: Date;
+  updatedAt: Date;
+
+  @OneToMany(() => BorrowRecord, (borrowRecord) => borrowRecord.book)
+  borrowRecords: BorrowRecord[];
 }

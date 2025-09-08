@@ -11,7 +11,6 @@ export const getDatabaseConfig = (
   password: configService.get<string>('POSTGRES_PASSWORD', 'password'),
   database: configService.get<string>('POSTGRES_DB', 'skilllane_db'),
   entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-
-  synchronize: false,
+  synchronize: true,
   logging: false,
 });

@@ -7,12 +7,8 @@ export interface BooksRepositoryInterface {
     limit: number,
     search: string,
   ): Promise<{ books: Book[]; total: number }>;
-  create(
-    book: Book,
-    file?: { url: string; path: string } | null,
-  ): Promise<Book>;
+  create(book: Book): Promise<Book>;
   update(id: string, book: Book): Promise<Book>;
   delete(id: string): Promise<void>;
-  reduceStock(id: string, qty: number): Promise<Book>;
-  increaseStock(id: string, qty: number): Promise<Book>;
+  updateStock(id: string, qty: number): Promise<Book>;
 }

@@ -1,19 +1,39 @@
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { BooksService } from './books.service';
 import { BooksRepositoryInterface } from './interfaces/books.interface';
+import { BorrowRecordRepositoryInterface } from './repository/borrow-record.repository';
 import { Book } from './entities/books.entity';
+import { BorrowRecord } from './entities/borrow_recoards.entity';
+import { User } from '../user/entity/user.entity';
 import { FileService } from '../files/file.service';
 import { Readable } from 'stream';
 
-function makeMockRepo(): jest.Mocked<BooksRepositoryInterface> {
+function makeMockBookRepo(): jest.Mocked<BooksRepositoryInterface> {
   return {
     findOne: jest.fn(),
     findAll: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
-    reduceStock: jest.fn(),
-    increaseStock: jest.fn(),
+    updateStock: jest.fn(),
+  };
+}
+
+function makeMockBorrowRecordRepo(): jest.Mocked<BorrowRecordRepositoryInterface> {
+  return {
+    create: jest.fn(),
+    findActiveByUserAndBook: jest.fn(),
+    findActiveByUser: jest.fn(),
+    findActiveByBook: jest.fn(),
+    findById: jest.fn(),
+    borrowBook: jest.fn(),
+    returnBook: jest.fn(),
+    getUserBorrowHistory: jest.fn(),
+    getBookBorrowHistory: jest.fn(),
   };
 }
 
@@ -28,7 +48,8 @@ function makeMockFileService(): jest.Mocked<Pick<FileService, 'uploadFile'>> {
 
 describe('BooksService (unit)', () => {
   let service: BooksService;
-  let repo: jest.Mocked<BooksRepositoryInterface>;
+  let bookRepo: jest.Mocked<BooksRepositoryInterface>;
+  let borrowRecordRepo: jest.Mocked<BorrowRecordRepositoryInterface>;
   let fileService: jest.Mocked<Pick<FileService, 'uploadFile'>>;
 
   const baseBook: Book = {
@@ -44,6 +65,25 @@ describe('BooksService (unit)', () => {
     totalQuantity: 3,
     availableQuantity: 3,
     ISBN: '1234567890',
+    createdAt: new Date('2020-01-01T00:00:00Z'),
+    updatedAt: new Date('2020-01-01T00:00:00Z'),
+    borrowRecords: [],
+  };
+
+  const baseUser: User = {
+    id: 'user-uuid',
+    username: 'testuser',
+    password: 'hashedpassword',
+    borrowRecords: [],
+  };
+
+  const baseBorrowRecord: BorrowRecord = {
+    id: 'borrow-uuid',
+    user: baseUser,
+    book: baseBook,
+    borrowedAt: new Date('2020-01-01T00:00:00Z'),
+    dueDate: new Date('2020-01-08T00:00:00Z'),
+    returnedAt: null,
     createdAt: new Date('2020-01-01T00:00:00Z'),
     updatedAt: new Date('2020-01-01T00:00:00Z'),
   };
@@ -69,13 +109,14 @@ describe('BooksService (unit)', () => {
   });
 
   beforeEach(() => {
-    repo = makeMockRepo();
+    bookRepo = makeMockBookRepo();
+    borrowRecordRepo = makeMockBorrowRecordRepo();
     fileService = makeMockFileService();
-    service = new BooksService(repo, fileService as any);
+    service = new BooksService(bookRepo, borrowRecordRepo, fileService as any);
   });
 
   it('create: should set availableQuantity = totalQuantity', async () => {
-    repo.create.mockResolvedValue(baseBook);
+    bookRepo.create.mockResolvedValue(baseBook);
 
     const created = await service.create(
       {
@@ -92,7 +133,7 @@ describe('BooksService (unit)', () => {
     expect(fileService.uploadFile).toHaveBeenCalledWith(file);
 
     expect(created.availableQuantity).toBe(3);
-    expect(repo.create).toHaveBeenCalledWith(
+    expect(bookRepo.create).toHaveBeenCalledWith(
       expect.objectContaining({
         title: baseBook.title,
         description: baseBook.description,
@@ -109,9 +150,9 @@ describe('BooksService (unit)', () => {
   });
 
   it('update: should update the book (partial), repo merges', async () => {
-    repo.findOne?.mockResolvedValue?.(baseBook);
+    bookRepo.findOne?.mockResolvedValue?.(baseBook);
 
-    repo.update.mockResolvedValue({
+    bookRepo.update.mockResolvedValue({
       ...baseBook,
       title: 'วิธีทำผัดผัก',
       description: 'การทำผัดผัก',
@@ -134,7 +175,7 @@ describe('BooksService (unit)', () => {
     expect(updated.title).toBe('วิธีทำผัดผัก');
     expect(updated.availableQuantity).toBe(3);
     expect(updated.totalQuantity).toBe(3);
-    expect(repo.update).toHaveBeenCalledWith(
+    expect(bookRepo.update).toHaveBeenCalledWith(
       'uuid',
       expect.objectContaining({
         title: 'วิธีทำผัดผัก',
@@ -149,40 +190,70 @@ describe('BooksService (unit)', () => {
     expect(updated.updatedAt).toBeInstanceOf(Date);
   });
 
-  it('borrow: decrements availableQuantity; conflict when not enough', async () => {
-    repo.reduceStock.mockResolvedValue({
-      ...baseBook,
-      availableQuantity: 2,
+  it('borrow: should borrow book with user tracking', async () => {
+    const borrowedBook = { ...baseBook, availableQuantity: 2 };
+    borrowRecordRepo.borrowBook.mockResolvedValue({
+      book: borrowedBook,
+      borrowRecord: baseBorrowRecord,
     });
 
-    const ok = await service.borrow({ id: 'uuid' }, { qty: 1 });
-    expect(ok.availableQuantity).toBe(2);
-    expect(ok.totalQuantity).toBe(3);
-    expect(repo.reduceStock).toHaveBeenCalledWith('uuid', 1);
-
-    repo.reduceStock.mockRejectedValueOnce(
-      new ConflictException('Not enough copies'),
+    const result = await service.borrow(
+      { id: 'uuid' },
+      { qty: 1 },
+      'user-uuid',
     );
-    await expect(
-      service.borrow({ id: 'uuid' }, { qty: 10 }),
-    ).rejects.toBeInstanceOf(ConflictException);
+
+    expect(result.availableQuantity).toBe(2);
+    expect(borrowRecordRepo.borrowBook).toHaveBeenCalledWith(
+      'uuid',
+      'user-uuid',
+      1,
+      7,
+    );
   });
 
-  it('return: increments availableQuantity but not over totalQuantity', async () => {
-    repo.increaseStock.mockResolvedValue({
-      ...baseBook,
-      availableQuantity: 3,
+  it('borrow: should throw error when userId is missing', async () => {
+    await expect(
+      service.borrow({ id: 'uuid' }, { qty: 1 }, ''),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('return: should return book with user tracking', async () => {
+    const returnedBook = { ...baseBook, availableQuantity: 3 };
+    borrowRecordRepo.returnBook.mockResolvedValue({
+      book: returnedBook,
+      borrowRecord: { ...baseBorrowRecord, returnedAt: new Date() },
     });
 
-    const ok = await service.return({ id: 'uuid' }, { qty: 1 });
-    expect(ok.availableQuantity).toBe(3);
-    expect(ok.totalQuantity).toBe(3);
+    const result = await service.return(
+      { id: 'uuid' },
+      { qty: 1 },
+      'user-uuid',
+    );
+
+    expect(result.availableQuantity).toBe(3);
+    expect(borrowRecordRepo.returnBook).toHaveBeenCalledWith(
+      'uuid',
+      'user-uuid',
+      1,
+    );
   });
 
-  it('borrow: not found passthrough', async () => {
-    repo.reduceStock.mockRejectedValue(new NotFoundException());
+  it('return: should throw error when userId is missing', async () => {
     await expect(
-      service.borrow({ id: 'missing' }, { qty: 1 }),
-    ).rejects.toBeInstanceOf(NotFoundException);
+      service.return({ id: 'uuid' }, { qty: 1 }, ''),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('getUserBorrowHistory: should return user borrow history', async () => {
+    const borrowHistory = [baseBorrowRecord];
+    borrowRecordRepo.getUserBorrowHistory.mockResolvedValue(borrowHistory);
+
+    const result = await service.getUserBorrowHistory('user-uuid');
+
+    expect(result).toEqual(borrowHistory);
+    expect(borrowRecordRepo.getUserBorrowHistory).toHaveBeenCalledWith(
+      'user-uuid',
+    );
   });
 });

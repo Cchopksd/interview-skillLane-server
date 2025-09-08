@@ -1,0 +1,227 @@
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, IsNull } from 'typeorm';
+import { BorrowRecord } from '../entities/borrow_recoards.entity';
+import { Book } from '../entities/books.entity';
+import { User } from '../../user/entity/user.entity';
+
+export interface BorrowRecordRepositoryInterface {
+  create(borrowRecord: Partial<BorrowRecord>): Promise<BorrowRecord>;
+  findActiveByUserAndBook(
+    userId: string,
+    bookId: string,
+  ): Promise<BorrowRecord | null>;
+  findActiveByUser(userId: string): Promise<BorrowRecord[]>;
+  findActiveByBook(bookId: string): Promise<BorrowRecord[]>;
+  findById(id: string): Promise<BorrowRecord | null>;
+  borrowBook(
+    bookId: string,
+    userId: string,
+    qty: number,
+    days: number,
+  ): Promise<{ book: Book; borrowRecord: BorrowRecord }>;
+  returnBook(
+    bookId: string,
+    userId: string,
+    qty: number,
+  ): Promise<{ book: Book; borrowRecord: BorrowRecord }>;
+  getUserBorrowHistory(userId: string): Promise<BorrowRecord[]>;
+  getBookBorrowHistory(bookId: string): Promise<BorrowRecord[]>;
+}
+
+@Injectable()
+export class BorrowRecordRepository implements BorrowRecordRepositoryInterface {
+  constructor(
+    @InjectRepository(BorrowRecord)
+    private readonly repository: Repository<BorrowRecord>,
+    @InjectRepository(Book)
+    private readonly bookRepository: Repository<Book>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+  ) {}
+
+  async create(borrowRecord: Partial<BorrowRecord>): Promise<BorrowRecord> {
+    const newRecord = this.repository.create(borrowRecord);
+    return this.repository.save(newRecord);
+  }
+
+  async findActiveByUserAndBook(
+    userId: string,
+    bookId: string,
+  ): Promise<BorrowRecord | null> {
+    return this.repository.findOne({
+      where: {
+        user: { id: userId },
+        book: { id: bookId },
+        returnedAt: IsNull(),
+      },
+      relations: ['user', 'book'],
+    });
+  }
+
+  async findActiveByUser(userId: string): Promise<BorrowRecord[]> {
+    return this.repository.find({
+      where: {
+        user: { id: userId },
+        returnedAt: IsNull(),
+      },
+      relations: ['book'],
+      order: { borrowedAt: 'DESC' },
+    });
+  }
+
+  async findActiveByBook(bookId: string): Promise<BorrowRecord[]> {
+    return this.repository.find({
+      where: {
+        book: { id: bookId },
+        returnedAt: IsNull(),
+      },
+      relations: ['user'],
+      order: { borrowedAt: 'DESC' },
+    });
+  }
+
+  async findById(id: string): Promise<BorrowRecord | null> {
+    return this.repository.findOne({
+      where: { id },
+      relations: ['user', 'book'],
+    });
+  }
+
+  async borrowBook(
+    bookId: string,
+    userId: string,
+    qty: number,
+    days: number,
+  ): Promise<{ book: Book; borrowRecord: BorrowRecord }> {
+    return this.repository.manager.transaction(async (manager) => {
+      const bookRepo = manager.getRepository(Book);
+      const borrowRecordRepo = manager.getRepository(BorrowRecord);
+      const userRepo = manager.getRepository(User);
+
+      // Get book with lock
+      const book = await bookRepo.findOne({
+        where: { id: bookId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!book) throw new NotFoundException('Book not found');
+
+      // Get user
+      const user = await userRepo.findOne({ where: { id: userId } });
+      if (!user) throw new NotFoundException('User not found');
+
+      // Check if user already has an active borrow for this book
+      const existingBorrow = await borrowRecordRepo.findOne({
+        where: {
+          user: { id: userId },
+          book: { id: bookId },
+          returnedAt: IsNull(),
+        },
+      });
+      if (existingBorrow) {
+        throw new ConflictException(
+          'User already has an active borrow for this book',
+        );
+      }
+
+      // Check stock availability
+      const next = book.availableQuantity - qty;
+      if (next < 0) {
+        throw new ConflictException('Book stock is not enough');
+      }
+
+      // Update book stock
+      book.availableQuantity = next;
+      const updatedBook = await bookRepo.save(book);
+
+      // Create borrow record
+      const borrowedAt = new Date();
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + days);
+
+      const borrowRecord = borrowRecordRepo.create({
+        user,
+        book: updatedBook,
+        borrowedAt,
+        dueDate,
+      });
+      const savedBorrowRecord = await borrowRecordRepo.save(borrowRecord);
+
+      return { book: updatedBook, borrowRecord: savedBorrowRecord };
+    });
+  }
+
+  async returnBook(
+    bookId: string,
+    userId: string,
+    qty: number,
+  ): Promise<{ book: Book; borrowRecord: BorrowRecord }> {
+    return this.repository.manager.transaction(async (manager) => {
+      const bookRepo = manager.getRepository(Book);
+      const borrowRecordRepo = manager.getRepository(BorrowRecord);
+
+      // Get book with lock
+      const book = await bookRepo.findOne({
+        where: { id: bookId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!book) throw new NotFoundException('Book not found');
+
+      // Find active borrow record
+      const borrowRecord = await borrowRecordRepo.findOne({
+        where: {
+          user: { id: userId },
+          book: { id: bookId },
+          returnedAt: IsNull(),
+        },
+        relations: ['user', 'book'],
+      });
+      if (!borrowRecord) {
+        throw new NotFoundException(
+          'No active borrow record found for this book',
+        );
+      }
+
+      // Check if return quantity matches borrow quantity
+      if (qty !== 1) {
+        throw new ConflictException(
+          'Return quantity must match borrow quantity',
+        );
+      }
+
+      // Update book stock
+      const next = book.availableQuantity + qty;
+      if (next > book.totalQuantity) {
+        throw new ConflictException('Book stock is full');
+      }
+      book.availableQuantity = next;
+      const updatedBook = await bookRepo.save(book);
+
+      // Mark as returned
+      borrowRecord.returnedAt = new Date();
+      const updatedBorrowRecord = await borrowRecordRepo.save(borrowRecord);
+
+      return { book: updatedBook, borrowRecord: updatedBorrowRecord };
+    });
+  }
+
+  async getUserBorrowHistory(userId: string): Promise<BorrowRecord[]> {
+    return this.repository.find({
+      where: { user: { id: userId } },
+      relations: ['book'],
+      order: { borrowedAt: 'DESC' },
+    });
+  }
+
+  async getBookBorrowHistory(bookId: string): Promise<BorrowRecord[]> {
+    return this.repository.find({
+      where: { book: { id: bookId } },
+      relations: ['user'],
+      order: { borrowedAt: 'DESC' },
+    });
+  }
+}

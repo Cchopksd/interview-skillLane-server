@@ -72,42 +72,25 @@ export class BookRepository implements BooksRepositoryInterface {
     }
   }
 
-  async reduceStock(id: string, qty: number): Promise<Book> {
+  async updateStock(id: string, qty: number): Promise<Book> {
     return this.repository.manager.transaction(async (manager) => {
-      const repo = manager.getRepository(Book);
-      const book = await repo.findOne({
-        where: { id },
-        lock: { mode: 'pessimistic_write' },
-      });
-      if (!book) throw new NotFoundException('Book not found');
-
-      const next = book.availableQuantity - qty;
-      if (next < 0) {
-        throw new ConflictException('Book stock is not enough');
-      } else {
-        book.availableQuantity = next;
-      }
-      return repo.save(book);
-    });
-  }
-
-  async increaseStock(id: string, qty: number): Promise<Book> {
-    return this.repository.manager.transaction(async (manager) => {
-      const repo = manager.getRepository(Book);
-      const book = await repo.findOne({
+      const bookRepo = manager.getRepository(Book);
+      const book = await bookRepo.findOne({
         where: { id },
         lock: { mode: 'pessimistic_write' },
       });
       if (!book) throw new NotFoundException('Book not found');
 
       const next = book.availableQuantity + qty;
-
+      if (next < 0) {
+        throw new ConflictException('Book stock is not enough');
+      }
       if (next > book.totalQuantity) {
         throw new ConflictException('Book stock is full');
       }
 
       book.availableQuantity = next;
-      return repo.save(book);
+      return bookRepo.save(book);
     });
   }
 

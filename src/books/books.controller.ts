@@ -8,6 +8,7 @@ import {
   Put,
   Delete,
   UseGuards,
+  Request,
 } from '@nestjs/common';
 import { BooksService } from './books.service';
 import { RequestBooksIdDto } from './dtos/request-books-id.dto';
@@ -59,13 +60,35 @@ export class BooksController {
 
   @UseGuards(JwtAuthGuard)
   @Post(':id/borrow')
-  async borrow(@Param('id') dto: RequestBooksIdDto, @Body() qty: QtyBooksDto) {
-    return this.booksService.borrow(dto, qty);
+  async borrow(
+    @Param('id') dto: RequestBooksIdDto,
+    @Body() qty: QtyBooksDto,
+    @Request() req: any,
+  ) {
+    const userId = req.user.id; // Extract user ID from JWT token
+    return this.booksService.borrow(dto, qty, userId);
   }
 
   @UseGuards(JwtAuthGuard)
   @Post(':id/return')
-  async return(@Param('id') dto: RequestBooksIdDto, @Body() qty: QtyBooksDto) {
-    return this.booksService.return(dto, qty);
+  async return(
+    @Param('id') dto: RequestBooksIdDto,
+    @Body() qty: QtyBooksDto,
+    @Request() req: any,
+  ) {
+    const userId = req.user.id; // Extract user ID from JWT token
+    return this.booksService.return(dto, qty, userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('my-borrows')
+  async getMyBorrowHistory(@Request() req: any) {
+    const userId = req.user.id; // Extract user ID from JWT token
+    return this.booksService.getUserBorrowHistory(userId);
+  }
+
+  @Get(':id/borrow-history')
+  async getBookBorrowHistory(@Param('id') dto: RequestBooksIdDto) {
+    return this.booksService.getBookBorrowHistory(dto);
   }
 }
