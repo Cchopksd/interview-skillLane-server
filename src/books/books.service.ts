@@ -10,9 +10,8 @@ import { UpdateBooksDto } from './dtos/update-books.dto';
 import { RequestBooksIdDto } from './dtos/request-books-id.dto';
 import { RequestBooksDto } from './dtos/request-books.dto';
 import { Paginated, PaginationMeta } from '@utils/pagination-cal.util';
-import { QtyBooksDto } from './dtos/qty-books.dto';
 import { BooksRepositoryInterface } from './interfaces/books.interface';
-import { BorrowRecordRepositoryInterface } from './repository/borrow-record.repository';
+import { BorrowRecordRepositoryInterface } from './interfaces/borrow.interface';
 import { Book } from './entities/books.entity';
 import { BorrowRecord } from './entities/borrow_recoards.entity';
 import { FileService } from '../files/file.service';
@@ -81,30 +80,21 @@ export class BooksService implements BooksServiceInterface {
     await this.booksRepository.delete(id);
   }
 
-  async borrow({ id }: RequestBooksIdDto, dto: QtyBooksDto, userId: string) {
+  async borrow({ id }: RequestBooksIdDto, userId: string) {
     if (!userId) {
       throw new BadRequestException('User ID is required');
     }
 
-    const result = await this.borrowRecordRepository.borrowBook(
-      id,
-      userId,
-      dto.qty,
-      7,
-    );
+    const result = await this.borrowRecordRepository.borrowBook(id, userId, 7);
     return result.book;
   }
 
-  async return({ id }: RequestBooksIdDto, dto: QtyBooksDto, userId: string) {
+  async return({ id }: RequestBooksIdDto, userId: string) {
     if (!userId) {
       throw new BadRequestException('User ID is required');
     }
 
-    const result = await this.borrowRecordRepository.returnBook(
-      id,
-      userId,
-      dto.qty,
-    );
+    const result = await this.borrowRecordRepository.returnBook(id, userId);
     return result.book;
   }
 

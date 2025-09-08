@@ -17,7 +17,6 @@ import { RequestBooksIdDto } from './dtos/request-books-id.dto';
 import { RequestBooksDto } from './dtos/request-books.dto';
 import { CreateBooksDto } from './dtos/create-books.dto';
 import { UpdateBooksDto } from './dtos/update-books.dto';
-import { QtyBooksDto } from './dtos/qty-books.dto';
 import { UploadedImage } from 'src/common/decorators/file-validators.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -85,32 +84,23 @@ export class BooksController {
 
   @UseGuards(JwtAuthGuard)
   @Post(':id/borrow')
-  async borrow(
-    @Param() dto: RequestBooksIdDto,
-    @Body() qty: QtyBooksDto,
-    @Request() req: any,
-  ) {
+  async borrow(@Param() dto: RequestBooksIdDto, @Request() req: any) {
     const userId = req.user.id;
-    console.log(userId);
     return {
       statusCode: HttpStatus.OK,
       message: 'Book borrowed successfully',
-      data: await this.booksService.borrow(dto, qty, userId),
+      data: await this.booksService.borrow(dto, userId),
     };
   }
 
   @UseGuards(JwtAuthGuard)
   @Post(':id/return')
-  async return(
-    @Param() dto: RequestBooksIdDto,
-    @Body() qty: QtyBooksDto,
-    @Request() req: any,
-  ) {
+  async return(@Param() dto: RequestBooksIdDto, @Request() req: any) {
     const userId = req.user.id;
     return {
       statusCode: HttpStatus.OK,
       message: 'Book returned successfully',
-      data: await this.booksService.return(dto, qty, userId),
+      data: await this.booksService.return(dto, userId),
     };
   }
 

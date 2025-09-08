@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { BooksService } from './books.service';
 import { BooksRepositoryInterface } from './interfaces/books.interface';
-import { BorrowRecordRepositoryInterface } from './repository/borrow-record.repository';
+import { BorrowRecordRepositoryInterface } from './interfaces/borrow.interface';
 import { Book } from './entities/books.entity';
 import { BorrowRecord } from './entities/borrow_recoards.entity';
 import { User } from '../user/entity/user.entity';
@@ -197,25 +197,20 @@ describe('BooksService (unit)', () => {
       borrowRecord: baseBorrowRecord,
     });
 
-    const result = await service.borrow(
-      { id: 'uuid' },
-      { qty: 1 },
-      'user-uuid',
-    );
+    const result = await service.borrow({ id: 'uuid' }, 'user-uuid');
 
     expect(result.availableQuantity).toBe(2);
     expect(borrowRecordRepo.borrowBook).toHaveBeenCalledWith(
       'uuid',
       'user-uuid',
-      1,
       7,
     );
   });
 
   it('borrow: should throw error when userId is missing', async () => {
-    await expect(
-      service.borrow({ id: 'uuid' }, { qty: 1 }, ''),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    await expect(service.borrow({ id: 'uuid' }, '')).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
   });
 
   it('return: should return book with user tracking', async () => {
@@ -225,24 +220,19 @@ describe('BooksService (unit)', () => {
       borrowRecord: { ...baseBorrowRecord, returnedAt: new Date() },
     });
 
-    const result = await service.return(
-      { id: 'uuid' },
-      { qty: 1 },
-      'user-uuid',
-    );
+    const result = await service.return({ id: 'uuid' }, 'user-uuid');
 
     expect(result.availableQuantity).toBe(3);
     expect(borrowRecordRepo.returnBook).toHaveBeenCalledWith(
       'uuid',
       'user-uuid',
-      1,
     );
   });
 
   it('return: should throw error when userId is missing', async () => {
-    await expect(
-      service.return({ id: 'uuid' }, { qty: 1 }, ''),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    await expect(service.return({ id: 'uuid' }, '')).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
   });
 
   it('getUserBorrowHistory: should return user borrow history', async () => {

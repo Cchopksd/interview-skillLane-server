@@ -8,40 +8,13 @@ import { Repository, IsNull } from 'typeorm';
 import { BorrowRecord } from '../entities/borrow_recoards.entity';
 import { Book } from '../entities/books.entity';
 import { User } from '../../user/entity/user.entity';
-
-export interface BorrowRecordRepositoryInterface {
-  create(borrowRecord: Partial<BorrowRecord>): Promise<BorrowRecord>;
-  findActiveByUserAndBook(
-    userId: string,
-    bookId: string,
-  ): Promise<BorrowRecord | null>;
-  findActiveByUser(userId: string): Promise<BorrowRecord[]>;
-  findActiveByBook(bookId: string): Promise<BorrowRecord[]>;
-  findById(id: string): Promise<BorrowRecord | null>;
-  borrowBook(
-    bookId: string,
-    userId: string,
-    qty: number,
-    days: number,
-  ): Promise<{ book: Book; borrowRecord: BorrowRecord }>;
-  returnBook(
-    bookId: string,
-    userId: string,
-    qty: number,
-  ): Promise<{ book: Book; borrowRecord: BorrowRecord }>;
-  getUserBorrowHistory(userId: string): Promise<BorrowRecord[]>;
-  getBookBorrowHistory(bookId: string): Promise<BorrowRecord[]>;
-}
+import { BorrowRecordRepositoryInterface } from '../interfaces/borrow.interface';
 
 @Injectable()
 export class BorrowRecordRepository implements BorrowRecordRepositoryInterface {
   constructor(
     @InjectRepository(BorrowRecord)
     private readonly repository: Repository<BorrowRecord>,
-    @InjectRepository(Book)
-    private readonly bookRepository: Repository<Book>,
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
   ) {}
 
   async create(borrowRecord: Partial<BorrowRecord>): Promise<BorrowRecord> {
@@ -95,7 +68,6 @@ export class BorrowRecordRepository implements BorrowRecordRepositoryInterface {
   async borrowBook(
     bookId: string,
     userId: string,
-    qty: number,
     days: number,
   ): Promise<{ book: Book; borrowRecord: BorrowRecord }> {
     return this.repository.manager.transaction(async (manager) => {
@@ -129,7 +101,7 @@ export class BorrowRecordRepository implements BorrowRecordRepositoryInterface {
       }
 
       // Check stock availability
-      const next = book.availableQuantity - qty;
+      const next = book.availableQuantity - 1;
       if (next < 0) {
         throw new ConflictException('Book stock is not enough');
       }
@@ -158,7 +130,6 @@ export class BorrowRecordRepository implements BorrowRecordRepositoryInterface {
   async returnBook(
     bookId: string,
     userId: string,
-    qty: number,
   ): Promise<{ book: Book; borrowRecord: BorrowRecord }> {
     return this.repository.manager.transaction(async (manager) => {
       const bookRepo = manager.getRepository(Book);
@@ -186,15 +157,8 @@ export class BorrowRecordRepository implements BorrowRecordRepositoryInterface {
         );
       }
 
-      // Check if return quantity matches borrow quantity
-      if (qty !== 1) {
-        throw new ConflictException(
-          'Return quantity must match borrow quantity',
-        );
-      }
-
       // Update book stock
-      const next = book.availableQuantity + qty;
+      const next = book.availableQuantity + 1;
       if (next > book.totalQuantity) {
         throw new ConflictException('Book stock is full');
       }
