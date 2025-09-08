@@ -9,6 +9,7 @@ import {
   Delete,
   UseGuards,
   Request,
+  HttpStatus,
 } from '@nestjs/common';
 import { BooksService } from './books.service';
 import { RequestBooksIdDto } from './dtos/request-books-id.dto';
@@ -25,12 +26,20 @@ export class BooksController {
 
   @Get()
   async findAll(@Query() dto: RequestBooksDto) {
-    return this.booksService.findAll(dto);
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Books fetched successfully',
+      data: this.booksService.findAll(dto),
+    };
   }
 
   @Get(':id')
   async findOne(@Param('id') dto: RequestBooksIdDto) {
-    return this.booksService.findOne(dto);
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Book fetched successfully',
+      data: this.booksService.findOne(dto),
+    };
   }
 
   @UseGuards(JwtAuthGuard)
@@ -39,7 +48,11 @@ export class BooksController {
     @Body() dto: CreateBooksDto,
     @UploadedImage('cover') file: Express.Multer.File,
   ) {
-    return this.booksService.create(dto, file);
+    return {
+      statusCode: HttpStatus.CREATED,
+      message: 'Book created successfully',
+      data: this.booksService.create(dto, file),
+    };
   }
 
   @UseGuards(JwtAuthGuard)
@@ -49,13 +62,21 @@ export class BooksController {
     @Body() book: UpdateBooksDto,
     @UploadedImage('cover') file: Express.Multer.File,
   ) {
-    return this.booksService.update(dto, book, file);
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Book updated successfully',
+      data: this.booksService.update(dto, book, file),
+    };
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
   async delete(@Param('id') dto: RequestBooksIdDto) {
-    return this.booksService.delete(dto);
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Book deleted successfully',
+      data: this.booksService.delete(dto),
+    };
   }
 
   @UseGuards(JwtAuthGuard)
@@ -65,8 +86,12 @@ export class BooksController {
     @Body() qty: QtyBooksDto,
     @Request() req: any,
   ) {
-    const userId = req.user.id; // Extract user ID from JWT token
-    return this.booksService.borrow(dto, qty, userId);
+    const userId = req.user.id;
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Book borrowed successfully',
+      data: this.booksService.borrow(dto, qty, userId),
+    };
   }
 
   @UseGuards(JwtAuthGuard)
@@ -76,19 +101,31 @@ export class BooksController {
     @Body() qty: QtyBooksDto,
     @Request() req: any,
   ) {
-    const userId = req.user.id; // Extract user ID from JWT token
-    return this.booksService.return(dto, qty, userId);
+    const userId = req.user.id;
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Book returned successfully',
+      data: this.booksService.return(dto, qty, userId),
+    };
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('my-borrows')
   async getMyBorrowHistory(@Request() req: any) {
-    const userId = req.user.id; // Extract user ID from JWT token
-    return this.booksService.getUserBorrowHistory(userId);
+    const userId = req.user.id;
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'User borrow history fetched successfully',
+      data: this.booksService.getUserBorrowHistory(userId),
+    };
   }
 
   @Get(':id/borrow-history')
   async getBookBorrowHistory(@Param('id') dto: RequestBooksIdDto) {
-    return this.booksService.getBookBorrowHistory(dto);
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Book borrow history fetched successfully',
+      data: this.booksService.getBookBorrowHistory(dto),
+    };
   }
 }

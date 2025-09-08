@@ -5,6 +5,7 @@ import {
   Get,
   UseGuards,
   Request,
+  HttpStatus,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dtos/create-user.dto';
@@ -17,15 +18,23 @@ export class UserController {
   @Post()
   async create(@Body() dto: CreateUserDto) {
     const user = await this.usersService.create(dto);
-    return user;
+    return {
+      statusCode: HttpStatus.CREATED,
+      message: 'User created successfully',
+      data: user,
+    };
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('profile')
   async getProfile(@Request() req) {
     return {
-      id: req.user.userId,
-      username: req.user.username,
+      statusCode: HttpStatus.OK,
+      message: 'Profile fetched successfully',
+      data: {
+        id: req.user.userId,
+        username: req.user.username,
+      },
     };
   }
 }
