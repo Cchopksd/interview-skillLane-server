@@ -10,14 +10,8 @@ Before running this application, make sure you have the following installed:
 
 ## Quick Start
 
-### 1. Clone the Repository
 
-```bash
-git clone <repository-url>
-cd skillLane/server
-```
-
-### 2. Environment Setup
+### 1. Environment Setup
 
 Create a `.env` file in the `server` directory:
 
@@ -30,7 +24,7 @@ POSTGRES_PASSWORD=password
 POSTGRES_DB=skilllane_db
 
 # Application Configuration
-PORT=3000
+PORT=8080
 JWT_SECRET=secretNaja
 ```
 
@@ -75,21 +69,8 @@ docker-compose down
 docker-compose up --build -d
 ```
 
-### Using Docker directly
-
-```bash
-# Build the application image
-docker build -t skilllane-app .
-
-# Run the application (make sure PostgreSQL is running)
-docker run -p 3000:3000 --env-file .env skilllane-app
-
-# Run with database connection
-docker run -p 3000:3000 --env-file .env --network skilllane_skilllane_network skilllane-app
-```
-
 ### Docker Services
 
 - **PostgreSQL Database**: `skilllane_postgres` on port 5432
-- **NestJS Application**: `skilllane_app` on port 3000
+- **NestJS Application**: `skilllane_app` on port 8080
 - **File Uploads**: Persistent volume for uploaded files
