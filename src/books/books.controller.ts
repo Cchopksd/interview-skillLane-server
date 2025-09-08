@@ -10,6 +10,7 @@ import {
   UseGuards,
   Request,
   HttpStatus,
+  UseInterceptors,
 } from '@nestjs/common';
 import { BooksService } from './books.service';
 import { RequestBooksIdDto } from './dtos/request-books-id.dto';
@@ -19,6 +20,7 @@ import { UpdateBooksDto } from './dtos/update-books.dto';
 import { QtyBooksDto } from './dtos/qty-books.dto';
 import { UploadedImage } from 'src/common/decorators/file-validators.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('v1/books')
 export class BooksController {
@@ -46,7 +48,7 @@ export class BooksController {
   @Post()
   async create(
     @Body() dto: CreateBooksDto,
-    @UploadedImage('cover') file: Express.Multer.File,
+    @UploadedImage() file: Express.Multer.File,
   ) {
     return {
       statusCode: HttpStatus.CREATED,
@@ -56,11 +58,12 @@ export class BooksController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('cover'))
   @Put(':id')
   async update(
     @Param('id') dto: RequestBooksIdDto,
     @Body() book: UpdateBooksDto,
-    @UploadedImage('cover') file: Express.Multer.File,
+    @UploadedImage() file: Express.Multer.File,
   ) {
     return {
       statusCode: HttpStatus.OK,

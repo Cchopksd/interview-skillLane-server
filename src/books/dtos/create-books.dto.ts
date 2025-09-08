@@ -1,3 +1,4 @@
+import { Transform } from 'class-transformer';
 import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
 
 export class CreateBooksDto {
@@ -15,6 +16,7 @@ export class CreateBooksDto {
 
   @IsNumber()
   @IsNotEmpty()
+  @Transform(({ value }) => parseInt(value))
   totalQuantity: number;
 
   @IsString()
@@ -23,5 +25,6 @@ export class CreateBooksDto {
 
   @IsNumber()
   @IsNotEmpty()
+  @Transform(({ value }) => parseInt(value))
   publicationYear: number;
 }
