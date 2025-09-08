@@ -36,7 +36,7 @@ export class BooksController {
   }
 
   @Get(':id')
-  async findOne(@Param('id') dto: RequestBooksIdDto) {
+  async findOne(@Param() dto: RequestBooksIdDto) {
     return {
       statusCode: HttpStatus.OK,
       message: 'Book fetched successfully',
@@ -62,7 +62,7 @@ export class BooksController {
   @UseInterceptors(FileInterceptor('cover'))
   @Put(':id')
   async update(
-    @Param('id') dto: RequestBooksIdDto,
+    @Param() dto: RequestBooksIdDto,
     @Body() book: UpdateBooksDto,
     @UploadedImage() file: Express.Multer.File,
   ) {
@@ -75,7 +75,7 @@ export class BooksController {
 
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
-  async delete(@Param('id') dto: RequestBooksIdDto) {
+  async delete(@Param() dto: RequestBooksIdDto) {
     return {
       statusCode: HttpStatus.OK,
       message: 'Book deleted successfully',
@@ -86,7 +86,7 @@ export class BooksController {
   @UseGuards(JwtAuthGuard)
   @Post(':id/borrow')
   async borrow(
-    @Param('id') dto: RequestBooksIdDto,
+    @Param() dto: RequestBooksIdDto,
     @Body() qty: QtyBooksDto,
     @Request() req: any,
   ) {
@@ -101,7 +101,7 @@ export class BooksController {
   @UseGuards(JwtAuthGuard)
   @Post(':id/return')
   async return(
-    @Param('id') dto: RequestBooksIdDto,
+    @Param() dto: RequestBooksIdDto,
     @Body() qty: QtyBooksDto,
     @Request() req: any,
   ) {
@@ -125,7 +125,7 @@ export class BooksController {
   }
 
   @Get(':id/borrow-history')
-  async getBookBorrowHistory(@Param('id') dto: RequestBooksIdDto) {
+  async getBookBorrowHistory(@Param() dto: RequestBooksIdDto) {
     return {
       statusCode: HttpStatus.OK,
       message: 'Book borrow history fetched successfully',
